@@ -1,0 +1,554 @@
+/**
+ * js/app.js - Premium Interactive Application for Dr. Harsh Diet & Nutri Clinic
+ */
+
+document.addEventListener('DOMContentLoaded', () => {
+    initNavbar();
+    initMobileMenu();
+    initServiceFilters();
+    initBMICalculator();
+    initTestimonialSlider();
+    initFAQAccordion();
+    initBookingSystem();
+    initStatCounters();
+    initQuickActions();
+    initLightbox();
+});
+
+/* ==========================================================================
+   1. Sticky Navbar & Scroll Effects
+   ========================================================================== */
+function initNavbar() {
+    const navbar = document.getElementById('navbar');
+    const scrollThreshold = 40;
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > scrollThreshold) {
+            navbar.classList.add('glass-panel', 'shadow-md', 'py-3');
+            navbar.classList.remove('bg-transparent', 'py-5');
+        } else {
+            navbar.classList.remove('glass-panel', 'shadow-md', 'py-3');
+            navbar.classList.add('bg-transparent', 'py-5');
+        }
+    });
+}
+
+/* ==========================================================================
+   2. Mobile Hamburger Menu
+   ========================================================================== */
+function initMobileMenu() {
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const closeBtn = document.getElementById('mobile-close-btn');
+    const menuLinks = mobileMenu.querySelectorAll('a');
+
+    function openMenu() {
+        mobileMenu.classList.remove('translate-x-full');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
+        mobileMenu.classList.add('translate-x-full');
+        document.body.style.overflow = '';
+    }
+
+    if (menuBtn) menuBtn.addEventListener('click', openMenu);
+    if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+
+    menuLinks.forEach(link => {
+        link.addEventListener('click', closeMenu);
+    });
+}
+
+/* ==========================================================================
+   3. Service Category Filtering (21 Specialized Services)
+   ========================================================================== */
+function initServiceFilters() {
+    const filterButtons = document.querySelectorAll('.service-filter-btn');
+    const serviceCards = document.querySelectorAll('.service-card-item');
+
+    if (!filterButtons.length || !serviceCards.length) return;
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Update active button styles
+            filterButtons.forEach(b => {
+                b.classList.remove('bg-[#0A5C36]', 'text-white', 'shadow-md', 'font-semibold');
+                b.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+            });
+            btn.classList.add('bg-[#0A5C36]', 'text-white', 'shadow-md', 'font-semibold');
+            btn.classList.remove('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+
+            const targetCategory = btn.getAttribute('data-filter');
+
+            // Filter cards with smooth opacity transition
+            serviceCards.forEach(card => {
+                const cardCategory = card.getAttribute('data-category');
+                card.style.transition = 'all 0.3s ease';
+
+                if (targetCategory === 'all' || cardCategory === targetCategory) {
+                    card.classList.remove('hidden');
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'scale(1)';
+                    }, 50);
+                } else {
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        card.classList.add('hidden');
+                    }, 300);
+                }
+            });
+        });
+    });
+}
+
+/* ==========================================================================
+   4. Premium Interactive BMI & Calorie Calculator
+   ========================================================================== */
+function initBMICalculator() {
+    const calcForm = document.getElementById('bmi-calc-form');
+    if (!calcForm) return;
+
+    const resultBox = document.getElementById('bmi-result-box');
+    const bmiNumberEl = document.getElementById('bmi-number');
+    const bmiStatusEl = document.getElementById('bmi-status');
+    const bmiRecEl = document.getElementById('bmi-recommendation');
+    const calTargetEl = document.getElementById('calorie-target');
+    const bmiMeterFill = document.getElementById('bmi-meter-fill');
+    const bookGoalBtn = document.getElementById('book-goal-btn');
+
+    calcForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const heightCm = parseFloat(document.getElementById('calc-height').value);
+        const weightKg = parseFloat(document.getElementById('calc-weight').value);
+        const age = parseInt(document.getElementById('calc-age').value);
+        const gender = document.getElementById('calc-gender').value;
+        const goal = document.getElementById('calc-goal').value;
+
+        if (!heightCm || !weightKg || !age) {
+            alert('Please fill in all fields accurately.');
+            return;
+        }
+
+        // BMI Calculation
+        const heightM = heightCm / 100;
+        const bmi = (weightKg / (heightM * heightM)).toFixed(1);
+
+        // BMR (Basal Metabolic Rate) using Mifflin-St Jeor Equation
+        let bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age);
+        bmr = gender === 'male' ? bmr + 5 : bmr - 161;
+
+        // Daily calorie maintenance estimator (Assuming moderate activity 1.375)
+        let tdee = Math.round(bmr * 1.375);
+        let targetCalories = tdee;
+
+        let statusText = '';
+        let statusColor = '';
+        let recommendation = '';
+        let recommendedService = '';
+
+        if (bmi < 18.5) {
+            statusText = 'Underweight';
+            statusColor = '#D97706'; // Gold
+            targetCalories = tdee + 500; // Calorie surplus
+            recommendation = `You are currently in an underweight range. Dr. Harsh Mishra recommends a structured <b>Weight Gain & Scientific Muscle Building Program</b> with nutrient-dense meals.`;
+            recommendedService = 'Weight Gain Programs';
+        } else if (bmi >= 18.5 && bmi <= 24.9) {
+            statusText = 'Normal & Healthy';
+            statusColor = '#0A5C36'; // Emerald
+            targetCalories = goal === 'loss' ? tdee - 400 : (goal === 'gain' ? tdee + 400 : tdee);
+            recommendation = `Your weight is in the ideal healthy range! To maintain top vitality or optimize your sports/fitness performance, try our <b>Family Nutrition or Sports Diet Plans</b>.`;
+            recommendedService = 'Family Nutrition';
+        } else if (bmi >= 25.0 && bmi <= 29.9) {
+            statusText = 'Overweight';
+            statusColor = '#D97706'; // Amber/Gold
+            targetCalories = tdee - 500; // Calorie deficit
+            recommendation = `You are in the overweight range. A personalized <b>Weight Loss & Metabolic Reset Program</b> with Dr. Harsh can help you comfortably shed 3-5 kg per month without starvation.`;
+            recommendedService = 'Weight Loss Programs';
+        } else {
+            statusText = 'Obese Class';
+            statusColor = '#EF4444'; // Red
+            targetCalories = tdee - 700;
+            recommendation = `You are in the clinical obesity range. We highly recommend Dr. Harsh's specialized <b>Therapeutic Weight Loss & Lifestyle Management Program</b> to safeguard your cardiac and endocrine health.`;
+            recommendedService = 'Weight Loss Programs';
+        }
+
+        // Render Results
+        bmiNumberEl.textContent = bmi;
+        bmiStatusEl.textContent = statusText;
+        bmiStatusEl.style.color = statusColor;
+        bmiRecEl.innerHTML = recommendation;
+        calTargetEl.textContent = `${targetCalories} kcal / day`;
+
+        // Animate Meter Fill (Scale 15 to 40)
+        let meterPercent = Math.min(Math.max(((bmi - 15) / 25) * 100, 5), 95);
+        bmiMeterFill.style.width = `${meterPercent}%`;
+        bmiMeterFill.style.backgroundColor = statusColor;
+
+        // Reveal Result Box with Smooth Scroll
+        resultBox.classList.remove('hidden');
+        resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // Setup tailored CTA button
+        if (bookGoalBtn) {
+            bookGoalBtn.onclick = () => {
+                openBookingModal(recommendedService, `Referred from Health Calculator (BMI: ${bmi}, Status: ${statusText}, Goal: ${goal.toUpperCase()})`);
+            };
+        }
+    });
+}
+
+/* ==========================================================================
+   5. Premium Testimonial Slider
+   ========================================================================== */
+function initTestimonialSlider() {
+    const slides = document.querySelectorAll('.testimonial-slide');
+    const dots = document.querySelectorAll('.testimonial-dot');
+    const prevBtn = document.getElementById('testi-prev');
+    const nextBtn = document.getElementById('testi-next');
+    let currentIndex = 0;
+    let autoplayTimer;
+
+    if (!slides.length) return;
+
+    function showSlide(index) {
+        slides.forEach((slide) => {
+            slide.style.opacity = '0';
+            slide.style.transform = 'translateY(15px)';
+            slide.style.pointerEvents = 'none';
+            slide.classList.add('hidden');
+        });
+
+        dots.forEach(dot => dot.classList.remove('active'));
+
+        // Ensure index wraps correctly
+        if (index < 0) currentIndex = slides.length - 1;
+        else if (index >= slides.length) currentIndex = 0;
+        else currentIndex = index;
+
+        const currentSlide = slides[currentIndex];
+        currentSlide.classList.remove('hidden');
+        setTimeout(() => {
+            currentSlide.style.opacity = '1';
+            currentSlide.style.transform = 'translateY(0)';
+            currentSlide.style.pointerEvents = 'auto';
+        }, 30);
+
+        if (dots[currentIndex]) dots[currentIndex].classList.add('active');
+    }
+
+    function nextSlide() { showSlide(currentIndex + 1); }
+    function prevSlide() { showSlide(currentIndex - 1); }
+
+    function resetAutoplay() {
+        clearInterval(autoplayTimer);
+        autoplayTimer = setInterval(nextSlide, 6000);
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', () => { prevSlide(); resetAutoplay(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { nextSlide(); resetAutoplay(); });
+
+    dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+            showSlide(i);
+            resetAutoplay();
+        });
+    });
+
+    // Initialize
+    showSlide(0);
+    resetAutoplay();
+}
+
+/* ==========================================================================
+   6. FAQ Interactive Accordion
+   ========================================================================== */
+function initFAQAccordion() {
+    const faqItems = document.querySelectorAll('.faq-item');
+
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        const answer = item.querySelector('.faq-answer');
+        const icon = item.querySelector('.faq-icon');
+
+        question.addEventListener('click', () => {
+            const isOpen = !answer.classList.contains('hidden');
+
+            // Optionally close others
+            faqItems.forEach(other => {
+                other.querySelector('.faq-answer').classList.add('hidden');
+                other.querySelector('.faq-icon').classList.remove('rotate-180', 'text-[#0A5C36]');
+                other.querySelector('.faq-question').classList.remove('text-[#0A5C36]', 'font-semibold');
+            });
+
+            if (!isOpen) {
+                answer.classList.remove('hidden');
+                icon.classList.add('rotate-180', 'text-[#0A5C36]');
+                question.classList.add('text-[#0A5C36]', 'font-semibold');
+            }
+        });
+    });
+}
+
+/* ==========================================================================
+   7. Integrated Booking Modal System
+   ========================================================================== */
+function openBookingModal(serviceName = '', note = '') {
+    const modal = document.getElementById('booking-modal');
+    const serviceSelect = document.getElementById('book-service');
+    const noteField = document.getElementById('book-notes');
+
+    if (!modal) return;
+
+    if (serviceSelect && serviceName) {
+        // Look for exact option or set value
+        for (let opt of serviceSelect.options) {
+            if (opt.value.toLowerCase() === serviceName.toLowerCase() || opt.text.toLowerCase().includes(serviceName.toLowerCase())) {
+                serviceSelect.value = opt.value;
+                break;
+            }
+        }
+    }
+
+    if (noteField && note) {
+        noteField.value = note;
+    }
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Animate pop inside
+    const modalContent = modal.querySelector('.modal-box');
+    modalContent.style.opacity = '0';
+    modalContent.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+        modalContent.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        modalContent.style.opacity = '1';
+        modalContent.style.transform = 'scale(1)';
+    }, 50);
+}
+
+function closeBookingModal() {
+    const modal = document.getElementById('booking-modal');
+    if (!modal) return;
+
+    const modalContent = modal.querySelector('.modal-box');
+    modalContent.style.transform = 'scale(0.9)';
+    modalContent.style.opacity = '0';
+
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }, 200);
+}
+
+function initBookingSystem() {
+    const modal = document.getElementById('booking-modal');
+    const closeBtn = document.getElementById('modal-close-btn');
+    const bookTriggers = document.querySelectorAll('.book-consult-trigger');
+
+    // Attach triggers
+    bookTriggers.forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            const service = trigger.getAttribute('data-service') || '';
+            openBookingModal(service);
+        });
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeBookingModal);
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeBookingModal();
+        });
+    }
+
+    // Modal Form Submission
+    const bookingForm = document.getElementById('modal-booking-form');
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', handleFormSubmit);
+    }
+
+    // Main Page Form Submission (Section 10)
+    const pageBookingForm = document.getElementById('page-booking-form');
+    if (pageBookingForm) {
+        pageBookingForm.addEventListener('submit', handleFormSubmit);
+    }
+}
+
+function handleFormSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const isModal = form.id === 'modal-booking-form';
+
+    // Collect Data
+    const name = form.querySelector('[name="full_name"]').value;
+    const phone = form.querySelector('[name="phone"]').value;
+    const service = form.querySelector('[name="service"]').value;
+    const date = form.querySelector('[name="date"]').value;
+    const time = form.querySelector('[name="time"]') ? form.querySelector('[name="time"]').value : 'Anytime';
+    const mode = form.querySelector('[name="mode"]') ? form.querySelector('[name="mode"]').value : 'Offline (Clinic)';
+    const notes = form.querySelector('[name="notes"]') ? form.querySelector('[name="notes"]').value : '';
+
+    // Simulate Server Loading
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Confirming Appointment...`;
+
+    setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+
+        if (isModal) closeBookingModal();
+
+        // Show Success Confirmation Modal
+        showSuccessModal({ name, phone, service, date, time, mode, notes });
+        form.reset();
+    }, 1200);
+}
+
+function showSuccessModal(data) {
+    const successModal = document.getElementById('success-modal');
+    if (!successModal) return;
+
+    document.getElementById('succ-name').textContent = data.name;
+    document.getElementById('succ-service').textContent = data.service;
+    document.getElementById('succ-date').textContent = `${data.date} at ${data.time}`;
+    document.getElementById('succ-mode').textContent = data.mode;
+
+    // Prepare WhatsApp Quick Forward URL
+    const whatsappMsg = `Hello Dr. Harsh Mishra! I have booked a consultation on your website.\n\n*Patient*: ${data.name}\n*Phone*: ${data.phone}\n*Service*: ${data.service}\n*Preferred Date*: ${data.date} (${data.time})\n*Mode*: ${data.mode}\n*Notes*: ${data.notes || 'None'}\n\nPlease confirm my appointment. Looking forward to meeting you!`;
+    const encodedMsg = encodeURIComponent(whatsappMsg);
+    const whatsappForwardUrl = `https://wa.me/919829296679?text=${encodedMsg}`;
+
+    const waConfirmBtn = document.getElementById('succ-wa-confirm');
+    if (waConfirmBtn) {
+        waConfirmBtn.href = whatsappForwardUrl;
+    }
+
+    successModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    const modalBox = successModal.querySelector('.modal-box');
+    modalBox.style.opacity = '0';
+    modalBox.style.transform = 'scale(0.8)';
+    setTimeout(() => {
+        modalBox.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        modalBox.style.opacity = '1';
+        modalBox.style.transform = 'scale(1)';
+    }, 50);
+
+    const closeSuccBtn = document.getElementById('succ-close-btn');
+    const okSuccBtn = document.getElementById('succ-ok-btn');
+
+    const closeHandler = () => {
+        successModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    };
+
+    if (closeSuccBtn) closeSuccBtn.onclick = closeHandler;
+    if (okSuccBtn) okSuccBtn.onclick = closeHandler;
+}
+
+/* ==========================================================================
+   8. Stat Number Counters on Scroll
+   ========================================================================== */
+function initStatCounters() {
+    const counters = document.querySelectorAll('.stat-counter');
+    if (!counters.length) return;
+
+    let started = false;
+
+    window.addEventListener('scroll', () => {
+        if (started) return;
+        const topEl = counters[0].getBoundingClientRect().top;
+        if (topEl < window.innerHeight * 0.9) {
+            started = true;
+            counters.forEach(counter => {
+                const target = parseFloat(counter.getAttribute('data-target'));
+                const isFloat = counter.getAttribute('data-target').includes('.');
+                let current = 0;
+                const increment = target / 40;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        current = target;
+                        clearInterval(timer);
+                    }
+                    counter.textContent = isFloat ? current.toFixed(1) : Math.round(current);
+                }, 40);
+            });
+        }
+    });
+}
+
+/* ==========================================================================
+   9. Floating & Quick WhatsApp Handlers
+   ========================================================================== */
+function initQuickActions() {
+    const waTriggers = document.querySelectorAll('.whatsapp-direct-trigger');
+    const callTriggers = document.querySelectorAll('.call-direct-trigger');
+
+    waTriggers.forEach(trigger => {
+        trigger.addEventListener('click', () => {
+            const customText = trigger.getAttribute('data-message') || "Hello Dr. Harsh Mishra, I visited your premium website and would like to inquire about a customized nutrition plan.";
+            const url = `https://wa.me/919829296679?text=${encodeURIComponent(customText)}`;
+            window.open(url, '_blank');
+        });
+    });
+
+    callTriggers.forEach(trigger => {
+        trigger.addEventListener('click', () => {
+            window.location.href = 'tel:+919829296679';
+        });
+    });
+}
+
+/* ==========================================================================
+   10. Custom Lightbox Image Zoom
+   ========================================================================== */
+function initLightbox() {
+    const lightbox = document.getElementById('image-lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxCaption = document.getElementById('lightbox-caption');
+    const closeLightboxBtn = document.getElementById('lightbox-close-btn');
+    const zoomTriggers = document.querySelectorAll('.lightbox-trigger');
+
+    if (!lightbox || !lightboxImg) return;
+
+    zoomTriggers.forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            const imageSrc = trigger.querySelector('img') ? trigger.querySelector('img').src : trigger.getAttribute('data-image');
+            const caption = trigger.getAttribute('data-caption') || '';
+
+            lightboxImg.src = imageSrc;
+            if (lightboxCaption) lightboxCaption.textContent = caption;
+
+            lightbox.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+
+            lightboxImg.style.opacity = '0';
+            lightboxImg.style.transform = 'scale(0.8)';
+            setTimeout(() => {
+                lightboxImg.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                lightboxImg.style.opacity = '1';
+                lightboxImg.style.transform = 'scale(1)';
+            }, 30);
+        });
+    });
+
+    const closeHandler = () => {
+        lightbox.classList.add('hidden');
+        document.body.style.overflow = '';
+    };
+
+    if (closeLightboxBtn) closeLightboxBtn.addEventListener('click', closeHandler);
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) closeHandler();
+    });
+}
